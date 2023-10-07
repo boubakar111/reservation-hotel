@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -13,21 +14,34 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-
-Route::view('/', 'home');
+// Routes publiques
+Route::view('/', 'home')->name('home');
 Route::get('/hotels', '\App\Http\Controllers\HotelsController@index')->name('hotels');
-Route::get('/auth0/callback', '\Auth0\Login\Auth0Controller@callback' )->name('auth0-callback');
-Route::get('/login', 'Auth\Auth0IndexController@login')->name('login');
-Route::get('/logout', 'Auth\Auth0IndexController@logout')->name('logout')->middleware('auth');
 
-Route::prefix('dashboard/')->controller(\App\Http\Controllers\ReservationController::class)->group(function (){
-    Route::view('/','dashboard/dashboard');
-    Route::get('/reservations/create/{id}', 'create');
-    Route::get('reservations','index');
-    Route::get('/reservations/show/{reservation}', 'show');
-    Route::get('/reservations/edit/{reservation}', 'edite');
-    Route::get('/reservations/delete/{reservation}', 'destroy');
-    Route::resource('reservations','\App\Http\Controllers\ReservationController')->except('create');
+// Routes nécessitant une authentification et vérification
+Route::middleware(['auth', 'verified'])->group(function () {
+    // Routes de profil utilisateur
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    // Routes du tableau de bord
+    Route::view('/dashboard', 'dashboard.dashboard')->name('dashboard')->middleware(['auth', 'verified']);
+
+    // Routes de réservations
+    Route::prefix('dashboard/')->group(function () {
+        Route::get('/', [\App\Http\Controllers\ReservationController::class, 'index']);
+        Route::get('reservations/create/{id}', [\App\Http\Controllers\ReservationController::class, 'create'])->middleware(['auth', 'verified']);
+        Route::get('reservations/show/{reservation}', [\App\Http\Controllers\ReservationController::class, 'show'])->middleware(['auth', 'verified']);
+        Route::get('reservations/edit/{reservation}', [\App\Http\Controllers\ReservationController::class, 'edit'])->middleware(['auth', 'verified']);
+        Route::get('reservations/delete/{reservation}', [\App\Http\Controllers\ReservationController::class, 'destroy'])->middleware(['auth', 'verified']);
+        Route::resource('reservations', \App\Http\Controllers\ReservationController::class)->except('create');
+        //Routes dHotel
+        Route::get('/hotel/create', '\App\Http\Controllers\HotelsController@create')->name('hotel.create')->middleware(['auth', 'verified']);
+        Route::post('/hotel/store', '\App\Http\Controllers\HotelsController@store')->name('hotel.store')->middleware(['auth', 'verified']);
+        Route::get('/hotel/edit/{hotel}', '\App\Http\Controllers\HotelsController@edit')->name('hotel.edit')->middleware(['auth', 'verified']);
+        Route::post('/hotel/update/{hotel}', '\App\Http\Controllers\HotelsController@update')->name('hotel.update')->middleware(['auth', 'verified']);
+    });
 });
 
-
+// Autres routes d'authentification
+require __DIR__ . '/auth.php';

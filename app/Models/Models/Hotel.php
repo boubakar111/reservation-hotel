@@ -4,6 +4,7 @@ namespace App\Models\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 
 class Hotel extends Model
 {
@@ -17,5 +18,8 @@ class Hotel extends Model
       return $this->hasMany(Chambre::class);
     }
 
+    public function imagePath(): string{
+        return Storage::url($this->image);
+    }
 }
 
